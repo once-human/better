@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'onboarding_screen.dart';
+import 'main.dart';
+import 'screens/complete_profile_screen.dart';
+import 'user_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -8,16 +12,69 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  final UserService _userService = UserService();
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
+    
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    ));
+    
+    _fadeController.forward();
+    _checkAuthAndNavigate();
   }
 
-  _navigateToHome() async {
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
     await Future.delayed(const Duration(seconds: 2), () {});
-    if (mounted) {
+    
+    if (!mounted) return;
+    
+    // Check if user is already logged in
+    User? user = FirebaseAuth.instance.currentUser;
+    
+    if (user != null) {
+      print('DEBUG: User already logged in: ${user.email ?? user.uid}');
+      
+      // Check if user needs to complete profile
+      bool needsProfile = await _userService.needsProfileCompletion();
+      
+      if (needsProfile) {
+        print('DEBUG: User needs to complete profile');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CompleteProfileScreen()),
+        );
+      } else {
+        // User is logged in and profile is complete, go to home
+        print('DEBUG: User logged in with complete profile, going to home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Better App')),
+        );
+      }
+    } else {
+      // No user logged in, show onboarding
+      print('DEBUG: No user logged in, showing onboarding');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const OnboardingScreen()),
@@ -28,17 +85,32 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          color: Color(0xFFFBF1F0),
-        ),
-        child: Image.asset(
-          'lib/assets/splash.png',
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
+      backgroundColor: const Color(0xFFFBF1F0),
+      body: Center(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Image.asset(
+                'lib/assets/better_navlogo.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'models/user_profile.dart';
 
 class UserService {
   static const String _userNameKey = 'user_name';
+  static const String _profileCompleteKey = 'profile_complete';
+  static const String _profileDataKey = 'profile_data';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -78,6 +82,8 @@ class UserService {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.remove(_userNameKey);
+      await prefs.remove(_profileCompleteKey);
+      print('UserService DEBUG: User data cleared');
     } catch (e) {
       print('Error clearing user data: $e');
     }
@@ -97,5 +103,112 @@ class UserService {
       print('Error getting user profile: $e');
     }
     return null;
+  }
+
+  // Mark profile as complete
+  Future<void> markProfileComplete() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_profileCompleteKey, true);
+      print('UserService DEBUG: Profile marked as complete');
+    } catch (e) {
+      print('UserService DEBUG: Error marking profile complete: $e');
+    }
+  }
+
+  // Check if profile is complete
+  Future<bool> isProfileComplete() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isComplete = prefs.getBool(_profileCompleteKey) ?? false;
+      print('UserService DEBUG: Profile complete check: $isComplete');
+      return isComplete;
+    } catch (e) {
+      print('UserService DEBUG: Error checking profile complete: $e');
+      return false;
+    }
+  }
+
+  // Save complete user profile
+  Future<void> saveUserProfile(UserProfile profile) async {
+    try {
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No user logged in');
+      
+      // Store in Firestore (non-blocking)
+      _firestore.collection('users').doc(user.uid).set(
+        profile.toMap(),
+        SetOptions(merge: true),
+      ).catchError((error) {
+        print('UserService DEBUG: Firestore save failed: $error');
+      });
+      
+      // Store locally
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_profileDataKey, jsonEncode(profile.toMap()));
+      await prefs.setString(_userNameKey, profile.fullName);
+      await prefs.setBool(_profileCompleteKey, true);
+      
+      print('UserService DEBUG: Profile saved successfully');
+    } catch (e) {
+      print('UserService DEBUG: Error saving profile: $e');
+      throw e;
+    }
+  }
+
+  // Get full user profile
+  Future<UserProfile?> getUserFullProfile() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user == null) return null;
+      
+      // Try to get from local storage first
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? profileJson = prefs.getString(_profileDataKey);
+      
+      if (profileJson != null) {
+        return UserProfile.fromMap(jsonDecode(profileJson));
+      }
+      
+      // Fallback to Firestore
+      try {
+        DocumentSnapshot doc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get()
+            .timeout(const Duration(seconds: 5));
+            
+        if (doc.exists && doc.data() != null) {
+          final profile = UserProfile.fromMap(doc.data() as Map<String, dynamic>);
+          // Cache locally
+          await prefs.setString(_profileDataKey, jsonEncode(profile.toMap()));
+          return profile;
+        }
+      } catch (firestoreError) {
+        print('UserService DEBUG: Firestore read failed: $firestoreError');
+      }
+      
+      return null;
+    } catch (e) {
+      print('UserService DEBUG: Error getting full profile: $e');
+      return null;
+    }
+  }
+
+  // Check if user needs to complete profile
+  Future<bool> needsProfileCompletion() async {
+    User? user = _auth.currentUser;
+    if (user == null) return false;
+    
+    // Check if profile is already complete
+    bool isComplete = await isProfileComplete();
+    if (isComplete) return false;
+    
+    // For anonymous users, always need profile
+    if (user.isAnonymous) return true;
+    
+    // For email/Google users, check if we have full profile data
+    UserProfile? profile = await getUserFullProfile();
+    return profile == null || !profile.isComplete;
   }
 }

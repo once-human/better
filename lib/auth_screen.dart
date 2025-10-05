@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'main.dart';
 import 'user_service.dart';
+import 'screens/complete_profile_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -244,20 +245,29 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       
       print('DEBUG: Checking if widget is mounted: $mounted');
       if (mounted) {
-        // Store user data after successful login/signup (non-blocking)
-        String userName = _extractNameFromEmail(_emailController.text.trim());
-        print('DEBUG: Starting background storage for: $userName');
+        // Check if user needs to complete profile
+        bool needsProfile = await _userService.needsProfileCompletion();
+        print('DEBUG: Needs profile completion: $needsProfile');
         
-        // Fire and forget - don't wait for Firestore
-        _userService.storeUserData(userName, _emailController.text.trim(), null).catchError((error) {
-          print('DEBUG: Background storage failed (ignored): $error');
-        });
-
-        print('DEBUG: Navigating to home page immediately...');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Better App')),
-        );
+        if (needsProfile) {
+          print('DEBUG: Navigating to complete profile screen...');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CompleteProfileScreen()),
+          );
+        } else {
+          // Store user data in background
+          String userName = _extractNameFromEmail(_emailController.text.trim());
+          _userService.storeUserData(userName, _emailController.text.trim(), null).catchError((error) {
+            print('DEBUG: Background storage failed (ignored): $error');
+          });
+          
+          print('DEBUG: Navigating to home page...');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Better App')),
+          );
+        }
         print('DEBUG: Navigation completed');
       }
     } on FirebaseAuthException catch (e) {
@@ -297,20 +307,29 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       print('DEBUG: Google sign in successful');
 
       if (mounted) {
-        // Store user data after successful Google sign-in (non-blocking)
-        String userName = googleUser.displayName ?? _extractNameFromEmail(googleUser.email);
-        print('DEBUG: Starting background storage for Google user: $userName');
+        // Check if user needs to complete profile
+        bool needsProfile = await _userService.needsProfileCompletion();
+        print('DEBUG: Google user needs profile completion: $needsProfile');
         
-        // Fire and forget - don't wait for Firestore
-        _userService.storeUserData(userName, googleUser.email, googleUser.photoUrl).catchError((error) {
-          print('DEBUG: Background storage failed (ignored): $error');
-        });
-
-        print('DEBUG: Navigating to home page immediately...');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Better App')),
-        );
+        if (needsProfile) {
+          print('DEBUG: Navigating to complete profile screen...');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CompleteProfileScreen()),
+          );
+        } else {
+          // Store user data in background
+          String userName = googleUser.displayName ?? _extractNameFromEmail(googleUser.email);
+          _userService.storeUserData(userName, googleUser.email, googleUser.photoUrl).catchError((error) {
+            print('DEBUG: Background storage failed (ignored): $error');
+          });
+          
+          print('DEBUG: Navigating to home page...');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Better App')),
+          );
+        }
         print('DEBUG: Navigation completed');
       }
     } on FirebaseAuthException catch (e) {
@@ -335,19 +354,10 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       print('DEBUG: Anonymous sign in successful');
 
       if (mounted) {
-        // Store user data for anonymous user (non-blocking)
-        String userName = 'Guest User';
-        print('DEBUG: Starting background storage for anonymous user');
-        
-        // Fire and forget - don't wait for Firestore
-        _userService.storeUserData(userName, 'anonymous@better.app', null).catchError((error) {
-          print('DEBUG: Background storage failed (ignored): $error');
-        });
-
-        print('DEBUG: Navigating to home page immediately...');
+        print('DEBUG: Navigating to complete profile screen for guest user...');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Better App')),
+          MaterialPageRoute(builder: (context) => const CompleteProfileScreen()),
         );
         print('DEBUG: Navigation completed');
       }
