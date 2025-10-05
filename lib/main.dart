@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'splash_screen.dart';
+import 'user_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -33,10 +37,14 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
+  String _userName = 'Khushi'; // Default fallback
+  final UserService _userService = UserService();
 
   @override
   void initState() {
     super.initState();
+    _loadUserName();
+
     // Keep status bar visible but make it transparent
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -44,6 +52,17 @@ class _MyHomePageState extends State<MyHomePage> {
         statusBarIconBrightness: Brightness.dark,
       ),
     );
+  }
+
+  Future<void> _loadUserName() async {
+    String? name = await _userService.getUserName();
+    if (name != null && mounted) {
+      // Extract first name only
+      String firstName = name.split(' ').first;
+      setState(() {
+        _userName = firstName;
+      });
+    }
   }
 
   @override
@@ -62,9 +81,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Welcome message
-                  const Text(
-                    'Welcome Khushi,',
-                    style: TextStyle(
+                  Text(
+                    'Welcome $_userName,',
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 20, // Much smaller - about 1/3rd
                       fontWeight: FontWeight.w500, // Medium
@@ -275,80 +294,79 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       child: SafeArea(
         child: Container(
-          height: 60, // Much shorter
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-                child: Row(
-                  children: [
-                    // 30% space from left
-                    Expanded(flex: 3, child: SizedBox()),
-                    // Home icon with larger click area
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedIndex = 0;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12), // Larger click area but not too big
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.home,
-                              color: _selectedIndex == 0 ? const Color(0xFFDA6666) : Colors.grey[600],
-                              size: 28,
-                            ),
-                            if (_selectedIndex == 0)
-                              Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ],
-                        ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Row(
+            children: [
+              // 30% space from left
+              Expanded(flex: 3, child: SizedBox()),
+              // Home icon with wide click area
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = 0;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8), // Click area that fits without overflow
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.home,
+                        color: _selectedIndex == 0 ? const Color(0xFFDA6666) : Colors.grey[600],
+                        size: 28,
                       ),
-                    ),
-                    // 40% space between icons (increased from 20%)
-                    Expanded(flex: 4, child: SizedBox()),
-                    // Community icon with larger click area
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedIndex = 1;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12), // Larger click area but not too big
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.group,
-                              color: _selectedIndex == 1 ? const Color(0xFFDA6666) : Colors.grey[600],
-                              size: 28,
-                            ),
-                            if (_selectedIndex == 1)
-                              Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ],
+                      if (_selectedIndex == 0)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                    ),
-                    // 30% space from right
-                    Expanded(flex: 3, child: SizedBox()),
-                  ],
+                    ],
+                  ),
                 ),
+              ),
+              // 40% space between icons
+              Expanded(flex: 4, child: SizedBox()),
+              // Community icon with wide click area
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = 1;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8), // Click area that fits without overflow
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.group,
+                        color: _selectedIndex == 1 ? const Color(0xFFDA6666) : Colors.grey[600],
+                        size: 28,
+                      ),
+                      if (_selectedIndex == 1)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              // 30% space from right
+              Expanded(flex: 3, child: SizedBox()),
+            ],
+          ),
         ),
       ),
     );

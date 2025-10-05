@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'main.dart';
+import 'package:flutter/physics.dart';
+import 'dart:math' as math;
+import 'auth_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -9,9 +11,28 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
   int currentPage = 0;
-  final PageController _pageController = PageController();
+  late AnimationController _fadeController;
+  late AnimationController _parallaxController;
+  late AnimationController _buttonScaleController;
+  late AnimationController _indicatorController;
+  
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _parallaxAnimation;
+  late Animation<double> _buttonScaleAnimation;
+  late Animation<double> _textSlideAnimation;
+  
+  bool _isTransitioning = false;
+  double _dragStart = 0;
+  double _dragDistance = 0;
+  
+  // Spring physics for gestures
+  final SpringDescription _spring = const SpringDescription(
+    mass: 1,
+    stiffness: 100,
+    damping: 15,
+  );
 
   final List<OnboardingData> onboardingData = [
     OnboardingData(
@@ -40,11 +61,102 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Initialize animation controllers
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    _parallaxController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _buttonScaleController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    
+    _indicatorController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    // Setup animations with custom curves
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: const Cubic(0.4, 0.0, 0.2, 1.0), // Material Design standard curve
+    );
+    
+    _parallaxAnimation = CurvedAnimation(
+      parent: _parallaxController,
+      curve: Curves.easeOutCubic,
+    );
+    
+    _buttonScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _buttonScaleController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _textSlideAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: const Interval(0.3, 1.0, curve: Curves.easeOutBack),
+    ));
+    
+    // Start with animation visible
+    _fadeController.value = 1.0;
+    
+    // Trigger haptic on load
+    HapticFeedback.selectionClick();
+    
     // Keep status bar visible but make it transparent
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
+      ),
+    );
+  }
+
+  void _navigateToAuth() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const AuthScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Sophisticated Apple-style animation
+          const begin = Offset(0.0, 0.1);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
+
+          var slideTween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var slideAnimation = animation.drive(slideTween);
+
+          var fadeTween = Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeOut));
+          var fadeAnimation = animation.drive(fadeTween);
+
+          var scaleTween = Tween(begin: 0.98, end: 1.0).chain(CurveTween(curve: Curves.easeOutCubic));
+          var scaleAnimation = animation.drive(scaleTween);
+
+          return SlideTransition(
+            position: slideAnimation,
+            child: FadeTransition(
+              opacity: fadeAnimation,
+              child: ScaleTransition(
+                scale: scaleAnimation,
+                child: child,
+              ),
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 600),
       ),
     );
   }
@@ -57,32 +169,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           // Visible header/navbar
           _buildHeader(),
-          // Main content with PageView
+          // Main content with fade animations
           Expanded(
-            child: Stack(
-              children: [
-                PageView.builder(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(), // Disable scrolling
-                  onPageChanged: (index) {
-                    setState(() {
-                      currentPage = index;
-                    });
-                  },
-                  itemCount: onboardingData.length,
-                  itemBuilder: (context, index) {
-                    return _buildOnboardingPage(onboardingData[index]);
-                  },
-                ),
-                // Bottom navigation overlay
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: _buildBottomNavigation(),
-                ),
-              ],
-            ),
+            child: _buildOnboardingPage(onboardingData[currentPage]),
           ),
         ],
       ),
@@ -140,29 +229,103 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildOnboardingPage(OnboardingData data) {
-    return Stack(
-      children: [
-        // Full-width main image starting from top
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 200, // Stop before the rounded card starts
-          child: Image.asset(
-            data.image,
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
+    return GestureDetector(
+      onHorizontalDragStart: (details) {
+        _dragStart = details.globalPosition.dx;
+        _buttonScaleController.forward();
+      },
+      onHorizontalDragUpdate: (details) {
+        setState(() {
+          _dragDistance = details.globalPosition.dx - _dragStart;
+        });
+      },
+      onHorizontalDragEnd: (details) {
+        _buttonScaleController.reverse();
+        final velocity = details.primaryVelocity ?? 0;
+        
+        // Swipe threshold with velocity consideration
+        if (_dragDistance.abs() > 100 || velocity.abs() > 500) {
+          if (_dragDistance > 0 && currentPage > 0) {
+            _previousPage();
+            HapticFeedback.lightImpact();
+          } else if (_dragDistance < 0 && currentPage < onboardingData.length - 1) {
+            _nextPage();
+            HapticFeedback.lightImpact();
+          }
+        }
+        
+        setState(() {
+          _dragDistance = 0;
+        });
+      },
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          // Full-width main image with parallax effect
+          Positioned.fill(
+            bottom: 200,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 600),
+              switchInCurve: const Cubic(0.4, 0.0, 0.2, 1.0),
+              switchOutCurve: const Cubic(0.4, 0.0, 1, 1),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                // Multi-layered transition
+                final fadeAnimation = Tween<double>(
+                  begin: 0.0,
+                  end: 1.0,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+                ));
+
+                final scaleAnimation = Tween<double>(
+                  begin: 1.05,
+                  end: 1.0,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: const SpringCurve(),
+                ));
+                
+                final slideAnimation = Tween<Offset>(
+                  begin: Offset(_isTransitioning ? 0.05 : -0.05, 0),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ));
+
+                return FadeTransition(
+                  opacity: fadeAnimation,
+                  child: SlideTransition(
+                    position: slideAnimation,
+                    child: ScaleTransition(
+                      scale: scaleAnimation,
+                      child: Transform.translate(
+                        offset: Offset(_dragDistance * 0.2, 0), // Parallax on drag
+                        child: child,
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: Image.asset(
+                data.image,
+                key: ValueKey<String>(data.image),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                alignment: Alignment.topCenter,
+              ),
+            ),
           ),
-        ),
-        // Bottom card overlay
+        // Bottom card overlay with fade animation
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
-          height: 250, // Increased height
+          height: 250,
           child: Container(
             decoration: const BoxDecoration(
-              color: Color(0xFFFBF1F0), // Updated color
+              color: Color(0xFFFBF1F0),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(40),
                 topRight: Radius.circular(40),
@@ -170,32 +333,84 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             padding: const EdgeInsets.fromLTRB(30, 40, 30, 30),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Text content
-                Text(
-                  data.text,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500, // Medium
-                    color: Color(0xFF2C2C2C),
-                    height: 1.4,
+                // Text content with fixed height container
+                SizedBox(
+                  height: 100, // Fixed height for text area
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      switchInCurve: const Cubic(0.4, 0.0, 0.2, 1.0),
+                      switchOutCurve: const Cubic(0.4, 0.0, 1, 1),
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        // Staggered text animation
+                        final fadeAnimation = Tween<double>(
+                          begin: 0.0,
+                          end: 1.0,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
+                        ));
+
+                        final slideAnimation = Tween<Offset>(
+                          begin: const Offset(0.0, 0.3),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: const Interval(0.2, 1.0, curve: Curves.easeOutBack),
+                        ));
+                        
+                        final scaleAnimation = Tween<double>(
+                          begin: 0.95,
+                          end: 1.0,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+                        ));
+
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(
+                            position: slideAnimation,
+                            child: ScaleTransition(
+                              scale: scaleAnimation,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Transform.translate(
+                        offset: Offset(_dragDistance * 0.1, 0), // Subtle parallax
+                        child: Text(
+                          data.text,
+                          key: ValueKey<String>(data.text),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF2C2C2C),
+                            height: 1.4,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 30),
-                // Navigation controls
-                currentPage == 4
-                    ? // Last page - only Get Started button
-                      Center(
+                // Navigation controls with fixed height container
+                SizedBox(
+                  height: 50, // Fixed height for navigation area
+                  child: currentPage == 4
+                      ? Center(
                           child: GestureDetector(
-                            onTap: _nextPage,
+                            onTap: _navigateToAuth,
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               curve: Curves.easeInOutCubic,
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              height: 50,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFDA6666),
                                 borderRadius: BorderRadius.circular(12),
@@ -220,141 +435,137 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                         )
-                    : // Other pages - normal navigation
-                      Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Previous button (only show if not on first page)
-                            currentPage > 0
-                                ? GestureDetector(
-                                    onTap: _previousPage,
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      curve: Curves.easeInOut,
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: const Icon(
-                                        Icons.arrow_back,
-                                        color: Colors.black,
-                                        size: 24,
-                                      ),
+                            // Previous button with fixed container
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: AnimatedOpacity(
+                                opacity: currentPage > 0 ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                child: GestureDetector(
+                                  onTap: currentPage > 0 ? _previousPage : null,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      borderRadius: BorderRadius.circular(20),
                                     ),
-                                  )
-                                : Container(
-                                    width: 40,
-                                    height: 40,
+                                    child: const Icon(
+                                      Icons.arrow_back,
+                                      color: Colors.black,
+                                      size: 24,
+                                    ),
                                   ),
+                                ),
+                              ),
+                            ),
                             // Page indicators
                             Row(
-                              children: List.generate(4, (index) {
-                                return Container(
+                              children: List.generate(5, (index) {
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeInOutCubic,
                                   margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  width: 10,
+                                  width: currentPage == index ? 24 : 10,
                                   height: 10,
                                   decoration: BoxDecoration(
-                                    color: currentPage == index ? Colors.red : Colors.grey[300],
-                                    shape: BoxShape.circle,
+                                    color: currentPage == index 
+                                        ? const Color(0xFFDA6666) 
+                                        : Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(5),
                                   ),
                                 );
                               }),
                             ),
-                            // Next button
-                            GestureDetector(
-                              onTap: _nextPage,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeInOut,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.black,
-                                  size: 24,
+                            // Next button with fixed container
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: GestureDetector(
+                                onTap: _nextPage,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_forward,
+                                    color: Colors.black,
+                                    size: 24,
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
+                ),
               ],
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBottomNavigation() {
-    return Container(
-      height: 100, // Space for bottom navigation
+    ),
     );
   }
 
   void _nextPage() {
-    if (currentPage < onboardingData.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-      );
-    } else {
-      // Navigate to main app with sophisticated Apple-level animation
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const MyHomePage(title: 'Better App'),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // Sophisticated Apple-style animation
-            const begin = Offset(0.0, 0.1);
-            const end = Offset.zero;
-            const curve = Curves.easeOutCubic;
-
-            // Subtle slide up animation
-            var slideTween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-            var slideAnimation = animation.drive(slideTween);
-
-            // Smooth fade in
-            var fadeTween = Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeOut));
-            var fadeAnimation = animation.drive(fadeTween);
-
-            // Subtle scale animation (very minimal)
-            var scaleTween = Tween(begin: 0.98, end: 1.0).chain(CurveTween(curve: Curves.easeOutCubic));
-            var scaleAnimation = animation.drive(scaleTween);
-
-            return SlideTransition(
-              position: slideAnimation,
-              child: FadeTransition(
-                opacity: fadeAnimation,
-                child: ScaleTransition(
-                  scale: scaleAnimation,
-                  child: child,
-                ),
-              ),
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 600), // Smooth and quick
-        ),
-      );
+    if (currentPage < onboardingData.length - 1 && !_isTransitioning) {
+      HapticFeedback.selectionClick();
+      setState(() {
+        _isTransitioning = true;
+        currentPage++;
+      });
+      
+      // Trigger indicator animation
+      _indicatorController.forward().then((_) {
+        _indicatorController.reset();
+      });
+      
+      // Reset transition flag after animation completes
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          setState(() {
+            _isTransitioning = false;
+          });
+        }
+      });
     }
   }
 
   void _previousPage() {
-    if (currentPage > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-      );
+    if (currentPage > 0 && !_isTransitioning) {
+      HapticFeedback.selectionClick();
+      setState(() {
+        _isTransitioning = true;
+        currentPage--;
+      });
+      
+      // Trigger indicator animation
+      _indicatorController.forward().then((_) {
+        _indicatorController.reset();
+      });
+      
+      // Reset transition flag after animation completes
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          setState(() {
+            _isTransitioning = false;
+          });
+        }
+      });
     }
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _fadeController.dispose();
+    _parallaxController.dispose();
+    _buttonScaleController.dispose();
+    _indicatorController.dispose();
     // Restore status bar
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -377,3 +588,19 @@ class OnboardingData {
     this.isLastScreen = false,
   });
 }
+
+// Custom Spring curve for natural animations
+class SpringCurve extends Curve {
+  const SpringCurve();
+  
+  @override
+  double transform(double t) {
+    const double c4 = (2 * 3.14159) / 3;
+    return t == 0
+        ? 0
+        : t == 1
+            ? 1
+            : -math.pow(2, -10 * t) * math.sin((t * 10 - 0.75) * c4) + 1;
+  }
+}
+

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "889871429891",
+    "project_id": "khushi-better-com",
+    "storage_bucket": "khushi-better-com.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889871429891:android:bb0dca4018084793243936",
+        "android_client_info": {
+          "package_name": "com.khushi.better"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "889871429891-enlpjnn6p97himujj4gugrlmh4d1kdk9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.khushi.better",
+            "certificate_hash": "5dedde95b6d4f41f42a20789491c1eaa9a2fc743"
+          }
+        },
+        {
+          "client_id": "889871429891-52i1mv72ga20neah571v7hnq971kh3sd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxx3xkLa6u8TT8cEdSi26qzQ4hJcIAYDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "889871429891-52i1mv72ga20neah571v7hnq971kh3sd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
