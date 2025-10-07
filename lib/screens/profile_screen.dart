@@ -215,143 +215,143 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Profile Header Card - Full Width, Better Design
+                      // Profile Header Card - Full Width White Design
                       Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 0),
-                        padding: const EdgeInsets.all(0),
+                        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFDA6666),
-                              Color(0xFFE57373),
-                              Color(0xFFF5C6C6),
-                            ],
-                            stops: [0.0, 0.5, 1.0],
-                          ),
-                          borderRadius: BorderRadius.circular(0),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFDA6666).withOpacity(0.15),
+                              color: Colors.black.withOpacity(0.08),
                               blurRadius: 25,
-                              offset: const Offset(0, 10),
+                              offset: const Offset(0, 8),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 50,
+                              offset: const Offset(0, 16),
                             ),
                           ],
                         ),
-                        child: SafeArea(
-                          bottom: false,
-                          child: Container(
-                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-                            child: Column(
-                              children: [
-                                // Profile Photo - Larger and more prominent
-                                ScaleTransition(
-                                  scale: _scaleAnimation,
-                                  child: Container(
-                                    width: 140,
-                                    height: 140,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.95),
-                                        width: 5,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 30,
-                                          offset: const Offset(0, 15),
-                                        ),
-                                        BoxShadow(
-                                          color: Colors.white.withOpacity(0.8),
-                                          blurRadius: 15,
-                                          offset: const Offset(0, -5),
-                                        ),
-                                      ],
+                        child: Column(
+                          children: [
+                            // Profile Photo - Prominent but not overwhelming
+                            ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFFDA6666).withOpacity(0.15),
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFDA6666).withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
                                     ),
-                                    child: ClipOval(
-                                      child: _profile?.photoUrl != null
-                                          ? (_profile!.photoUrl!.startsWith('http')
-                                              ? Image.network(
-                                                  _profile!.photoUrl!,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                                                )
-                                              : Image.file(
-                                                  File(_profile!.photoUrl!),
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                                                ))
-                                          : _buildDefaultAvatar(),
-                                    ),
-                                  ),
+                                  ],
                                 ),
-                                const SizedBox(height: 24),
-                                // Name with better typography
-                                Text(
-                                  _profile?.fullName ?? 'Guest User',
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black26,
-                                        blurRadius: 10,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  textAlign: TextAlign.center,
+                                child: ClipOval(
+                                  child: _profile?.photoUrl != null
+                                      ? (_profile!.photoUrl!.startsWith('http')
+                                          ? Image.network(
+                                              _profile!.photoUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                            )
+                                          : Image.file(
+                                              File(_profile!.photoUrl!),
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                            ))
+                                      : _buildDefaultAvatar(),
                                 ),
-                                const SizedBox(height: 8),
-                                // Email with better styling
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // Name
+                            Text(
+                              _profile?.fullName ?? 'Guest User',
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C2C2C),
+                                letterSpacing: -0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 6),
+                            // Email
+                            Text(
+                              _profile?.email ?? '',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w400,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            // Account Type Indicator
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _getAccountTypeColor(),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getAccountTypeIcon(),
+                                    size: 14,
+                                    color: _getAccountTypeTextColor(),
                                   ),
-                                  child: Text(
-                                    _profile?.email ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _getAccountTypeText(),
+                                    style: TextStyle(
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w500,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                if (_profile?.bio != null && _profile!.bio!.isNotEmpty) ...[
-                                  const SizedBox(height: 16),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.2),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _profile!.bio!,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        color: Colors.white,
-                                        height: 1.5,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 4,
-                                      overflow: TextOverflow.ellipsis,
+                                      color: _getAccountTypeTextColor(),
                                     ),
                                   ),
                                 ],
-                              ],
+                              ),
                             ),
-                          ),
+                            if (_profile?.bio != null && _profile!.bio!.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8F9FA),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  _profile!.bio!,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF2C2C2C),
+                                    height: 1.5,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 4,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
 
@@ -666,15 +666,56 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
   
-  Widget _buildDefaultAvatar() {
-    return Container(
-      color: const Color(0xFFF5F5F5),
-      child: Icon(
-        Icons.person,
-        size: 50,
-        color: Colors.grey[400],
-      ),
-    );
+  Color _getAccountTypeColor() {
+    if (_isGuest) {
+      return const Color(0xFFFFF3CD); // Light yellow for guest
+    }
+    
+    final email = _profile?.email ?? '';
+    if (email.contains('@gmail.com') || email.contains('google')) {
+      return const Color(0xFFE3F2FD); // Light blue for Google
+    }
+    
+    return const Color(0xFFF3E5F5); // Light purple for other accounts
+  }
+  
+  IconData _getAccountTypeIcon() {
+    if (_isGuest) {
+      return Icons.person_outline;
+    }
+    
+    final email = _profile?.email ?? '';
+    if (email.contains('@gmail.com') || email.contains('google')) {
+      return Icons.g_mobiledata; // Simple G for Google
+    }
+    
+    return Icons.email_outlined;
+  }
+  
+  String _getAccountTypeText() {
+    if (_isGuest) {
+      return 'Guest Account';
+    }
+    
+    final email = _profile?.email ?? '';
+    if (email.contains('@gmail.com') || email.contains('google')) {
+      return 'Google Account';
+    }
+    
+    return 'Email Account';
+  }
+  
+  Color _getAccountTypeTextColor() {
+    if (_isGuest) {
+      return const Color(0xFF856404); // Dark yellow
+    }
+    
+    final email = _profile?.email ?? '';
+    if (email.contains('@gmail.com') || email.contains('google')) {
+      return const Color(0xFF1565C0); // Dark blue
+    }
+    
+    return const Color(0xFF6A1B9A); // Dark purple
   }
   
   Widget _buildUpgradeSection() {
