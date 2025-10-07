@@ -8,6 +8,7 @@ class UserService {
   static const String _userNameKey = 'user_name';
   static const String _profileCompleteKey = 'profile_complete';
   static const String _profileDataKey = 'profile_data';
+  static const String _localProfilePicKey = 'local_profile_pic';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -83,9 +84,56 @@ class UserService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.remove(_userNameKey);
       await prefs.remove(_profileCompleteKey);
+      await prefs.remove(_profileDataKey);
+      await prefs.remove(_localProfilePicKey);
       print('UserService DEBUG: User data cleared');
     } catch (e) {
       print('Error clearing user data: $e');
+    }
+  }
+
+  // Save local profile picture path
+  Future<void> saveLocalProfilePicture(String imagePath) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_localProfilePicKey, imagePath);
+      print('UserService DEBUG: Local profile picture saved: $imagePath');
+    } catch (e) {
+      print('UserService DEBUG: Error saving local profile picture: $e');
+    }
+  }
+
+  // Get local profile picture path
+  Future<String?> getLocalProfilePicture() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_localProfilePicKey);
+    } catch (e) {
+      print('UserService DEBUG: Error getting local profile picture: $e');
+      return null;
+    }
+  }
+
+  // Get the best available profile picture (local > Google > null)
+  Future<String?> getBestProfilePicture() async {
+    try {
+      // First check local profile picture
+      String? localPic = await getLocalProfilePicture();
+      if (localPic != null && localPic.isNotEmpty) {
+        return localPic;
+      }
+      
+      // Then check Google profile picture
+      User? user = _auth.currentUser;
+      if (user?.photoURL != null && user!.photoURL!.isNotEmpty) {
+        return user.photoURL;
+      }
+      
+      // Return null if no picture available
+      return null;
+    } catch (e) {
+      print('UserService DEBUG: Error getting best profile picture: $e');
+      return null;
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'splash_screen.dart';
 import 'user_service.dart';
 import 'screens/profile_screen.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -97,77 +98,77 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-          HapticFeedback.selectionClick();
-        },
-        physics: const ClampingScrollPhysics(),
+      body: Column(
         children: [
-          _buildHomePage(),
-          _buildCommunityPage(),
+          // Fixed header at top
+          _buildHeader(),
+          // Scrollable content below
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+                HapticFeedback.selectionClick();
+              },
+              physics: const ClampingScrollPhysics(),
+              children: [
+                _buildHomeContent(),
+                _buildCommunityPage(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: _buildCurvedBottomNav(),
     );
   }
   
-  Widget _buildHomePage() {
-    return Column(
-      children: [
-        // Header/Navbar
-        _buildHeader(),
-        // Main content with RefreshIndicator
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _handleRefresh,
-            color: const Color(0xFFDA6666),
-            backgroundColor: Colors.white,
-            displacement: 40,
-            strokeWidth: 2.5,
-            child: Stack(
+  Widget _buildHomeContent() {
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      color: const Color(0xFFDA6666),
+      backgroundColor: Colors.white,
+      displacement: 40,
+      strokeWidth: 2.5,
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Welcome message - only show if name is loaded
-                      if (_userName.isNotEmpty)
-                        Text(
-                          'Welcome $_userName,',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2C2C2C),
-                          ),
-                        )
-                      else
-                        const SizedBox(height: 32),
-                      const SizedBox(height: 24),
-                      // Grid of cards
-                      _buildCardsGrid(),
-                      const SizedBox(height: 100), // Space for floating button
-                    ],
-                  ),
-                ),
-                // Floating Create Memoir Button
-                Positioned(
-                  bottom: 20,
-                  left: 24,
-                  right: 24,
-                  child: _buildCreateMemoirButton(),
-                ),
+                // Welcome message - only show if name is loaded
+                if (_userName.isNotEmpty)
+                  Text(
+                    'Welcome $_userName,',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C2C2C),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                // Grid of cards
+                _buildCardsGrid(),
+                const SizedBox(height: 100), // Space for floating button
               ],
             ),
           ),
-        ),
-      ],
+          // Floating Create Memoir Button
+          Positioned(
+            bottom: 20,
+            left: 24,
+            right: 24,
+            child: _buildCreateMemoirButton(),
+          ),
+        ],
+      ),
     );
   }
   
@@ -206,85 +207,100 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildHeader() {
-    final user = FirebaseAuth.instance.currentUser;
-    final hasProfileImage = user?.photoURL != null && user!.photoURL!.isNotEmpty;
-    
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 12,
-        left: 24,
-        right: 24,
-        bottom: 12,
-      ),
-      child: Row(
-        children: [
-          // Hamburger menu
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              // Add menu functionality
-            },
-            child: const Icon(
-              Icons.menu_rounded,
-              color: Color(0xFF2C2C2C),
-              size: 24,
-            ),
+    return FutureBuilder<String?>(
+      future: _userService.getBestProfilePicture(),
+      builder: (context, snapshot) {
+        final profilePicUrl = snapshot.data;
+        final hasProfileImage = profilePicUrl != null && profilePicUrl.isNotEmpty;
+        
+        return Container(
+          color: Colors.white,
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 12,
+            left: 24,
+            right: 24,
+            bottom: 12,
           ),
-          const SizedBox(width: 16),
-          // Logo with text - no background
-          Image.asset(
-            'lib/assets/better_navlogo.png',
-            height: 30,
-            fit: BoxFit.contain,
-          ),
-          const Spacer(),
-          // Right: Profile button
-          GestureDetector(
-            onTap: () async {
-              HapticFeedback.selectionClick();
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              );
-              // Reset to home when coming back from profile
-              if (mounted) {
-                setState(() {
-                  _selectedIndex = 0;
-                });
-              }
-            },
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFE0E0E0),
-                  width: 1.5,
+          child: Row(
+            children: [
+              // Hamburger menu
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  // Add menu functionality
+                },
+                child: const Icon(
+                  Icons.menu_rounded,
+                  color: Color(0xFF2C2C2C),
+                  size: 24,
                 ),
               ),
-              child: hasProfileImage
-                  ? ClipOval(
-                      child: Image.network(
-                        user!.photoURL!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
+              const SizedBox(width: 16),
+              // Logo with text - no background
+              Image.asset(
+                'lib/assets/better_navlogo.png',
+                height: 30,
+                fit: BoxFit.contain,
+              ),
+              const Spacer(),
+              // Right: Profile button
+              GestureDetector(
+                onTap: () async {
+                  HapticFeedback.selectionClick();
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
+                  // Reset to home when coming back from profile
+                  if (mounted) {
+                    setState(() {
+                      _selectedIndex = 0;
+                    });
+                  }
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFE0E0E0),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: hasProfileImage
+                      ? ClipOval(
+                          child: profilePicUrl!.startsWith('http')
+                              ? Image.network(
+                                  profilePicUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person_outline_rounded,
+                                    color: Color(0xFF2C2C2C),
+                                    size: 18,
+                                  ),
+                                )
+                              : Image.file(
+                                  File(profilePicUrl),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person_outline_rounded,
+                                    color: Color(0xFF2C2C2C),
+                                    size: 18,
+                                  ),
+                                ),
+                        )
+                      : const Icon(
                           Icons.person_outline_rounded,
                           color: Color(0xFF2C2C2C),
                           size: 18,
                         ),
-                      ),
-                    )
-                  : const Icon(
-                      Icons.person_outline_rounded,
-                      color: Color(0xFF2C2C2C),
-                      size: 18,
-                    ),
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

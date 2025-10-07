@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/user_profile.dart';
 import '../user_service.dart';
 import '../main.dart';
@@ -273,22 +274,22 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
     );
   }
 
-  Future<String?> _uploadImage() async {
+  Future<String?> _saveLocalImage() async {
     if (_imageFile == null) return _currentPhotoUrl;
     
     try {
-      final user = _auth.currentUser;
-      if (user == null) return null;
+      // Get app directory for storing images
+      final Directory appDir = await getApplicationDocumentsDirectory();
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_profile.jpg';
+      final String localPath = '${appDir.path}/$fileName';
       
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('user_profiles')
-          .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      // Copy the image file to app documents directory
+      await _imageFile!.copy(localPath);
       
-      await ref.putFile(_imageFile!);
-      return await ref.getDownloadURL();
+      print('Profile image saved locally: $localPath');
+      return localPath;
     } catch (e) {
-      print('Error uploading image: $e');
+      print('Error saving local image: $e');
       return null;
     }
   }
@@ -312,16 +313,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       final user = _auth.currentUser;
       if (user == null) throw Exception('No user logged in');
       
-      // Upload image if needed
-      String? photoUrl = await _uploadImage();
+      // Save image locally if needed
+      String? localImagePath = await _saveLocalImage();
       
-      // Create profile
+      // Create profile with local image path
       final profile = UserProfile(
         uid: user.uid,
         fullName: _nameController.text.trim(),
         dateOfBirth: _selectedDate!,
         bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
-        photoUrl: photoUrl,
+        photoUrl: localImagePath, // Local path instead of Firebase URL
         email: user.email ?? 'guest@better.app',
         createdAt: widget.existingProfile?.createdAt ?? DateTime.now(),
         lastUpdated: DateTime.now(),
@@ -331,10 +332,15 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       // Save to Firestore and locally
       await _userService.saveUserProfile(profile);
       
+      // Save local image path in SharedPreferences
+      if (localImagePath != null) {
+        await _userService.saveLocalProfilePicture(localImagePath);
+      }
+      
       // Update Firebase Auth display name
       await user.updateDisplayName(_nameController.text.trim());
-      if (photoUrl != null) {
-        await user.updatePhotoURL(photoUrl);
+      if (localImagePath != null) {
+        await user.updatePhotoURL(localImagePath); // Update with local path
       }
       
       if (mounted) {
