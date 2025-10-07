@@ -165,16 +165,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Visible header/navbar
-          _buildHeader(),
-          // Main content with fade animations
-          Expanded(
-            child: _buildOnboardingPage(onboardingData[currentPage]),
-          ),
-        ],
-      ),
+      body: _buildOnboardingPage(onboardingData[currentPage]),
     );
   }
 
@@ -261,8 +252,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Full-width main image with parallax effect
-          Positioned.fill(
+          // Full-width main image with parallax effect - now fullscreen
+          Positioned(
+            top: 0, // Start from top of screen (under status bar)
+            left: 0,
+            right: 0,
             bottom: 200,
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 600),

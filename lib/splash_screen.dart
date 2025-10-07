@@ -84,34 +84,59 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFFBF1F0),
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Image.asset(
-                'lib/assets/better_navlogo.png',
-                fit: BoxFit.contain,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // White background in case image doesn't fill
+          Container(color: Colors.white),
+          
+          // Full screen splash image
+          Positioned.fill(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Stack(
+                children: [
+                  // The splash image - fills width, aligns to bottom
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Image.asset(
+                      'lib/assets/splash.png',
+                      width: size.width,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.bottomCenter,
+                    ),
+                  ),
+                  
+                  // Gradient fade at top if needed for smooth blending
+                  if (size.height > size.width * 1.8) // If screen is taller than image aspect
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 120,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.white,
+                              Colors.white.withOpacity(0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

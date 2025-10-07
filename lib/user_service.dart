@@ -200,11 +200,34 @@ class UserService {
     User? user = _auth.currentUser;
     if (user == null) return false;
     
-    // Check if profile is already complete
+    try {
+      // First check Firestore for existing profile
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get()
+          .timeout(const Duration(seconds: 3));
+      
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data() as Map<String, dynamic>;
+        // If profile exists in Firestore and is complete, no need for completion
+        if (data['isComplete'] == true) {
+          // Cache locally for future checks
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setBool(_profileCompleteKey, true);
+          await prefs.setString(_profileDataKey, jsonEncode(data));
+          return false;
+        }
+      }
+    } catch (e) {
+      print('UserService DEBUG: Firestore check failed, checking local: $e');
+    }
+    
+    // Check local storage as fallback
     bool isComplete = await isProfileComplete();
     if (isComplete) return false;
     
-    // For anonymous users, always need profile
+    // For anonymous users, always need profile if not complete
     if (user.isAnonymous) return true;
     
     // For email/Google users, check if we have full profile data

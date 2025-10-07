@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
-import '../models/user_profile.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 import '../user_service.dart';
-import 'complete_profile_screen.dart';
+import '../models/user_profile.dart';
 import '../auth_screen.dart';
+import 'complete_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,43 +18,76 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
   final UserService _userService = UserService();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   UserProfile? _profile;
   bool _isLoading = true;
   bool _isGuest = false;
-  
-  late AnimationController _animationController;
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late AnimationController _scaleController;
   late Animation<double> _fadeAnimation;
-
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
+  
   @override
   void initState() {
     super.initState();
+    _loadProfile();
     
-    _animationController = AnimationController(
+    _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
     );
     
-    _loadProfile();
-    _animationController.forward();
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    );
+    
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOutCubic,
+    );
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _scaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.easeOutBack,
+    ));
+    
+    _fadeController.forward();
+    _slideController.forward();
+    _scaleController.forward();
   }
-
+  
   @override
   void dispose() {
-    _animationController.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
+    _scaleController.dispose();
     super.dispose();
   }
-
+  
   Future<void> _loadProfile() async {
     try {
-      final user = _auth.currentUser;
+      final auth = FirebaseAuth.instance;
+      final user = auth.currentUser;
       _isGuest = user?.isAnonymous ?? false;
       
       final profile = await _userService.getUserFullProfile();
@@ -69,35 +106,28 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       }
     }
   }
-
-  Future<void> _signOut() async {
+  
+  void _signOut() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        title: const Text(
-          'Sign Out',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Sign Out'),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              HapticFeedback.mediumImpact();
-              
               try {
+                await FirebaseAuth.instance.signOut();
                 await _userService.clearUserData();
-                await _auth.signOut();
+                Navigator.pushNamed(context, '/auth');
                 
                 if (mounted) {
                   Navigator.pushAndRemoveUntil(
@@ -187,32 +217,40 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFDA6666),
-                              Color(0xFFE57373),
+                      // Header with sophisticated gradient
+                      SlideTransition(
+                        position: _slideAnimation,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFFDA6666).withOpacity(0.95),
+                                const Color(0xFFF5C6C6),
+                              ],
+                              stops: const [0.3, 1.0],
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(40),
+                              bottomRight: Radius.circular(40),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFDA6666).withOpacity(0.2),
+                                blurRadius: 30,
+                                offset: const Offset(0, 15),
+                              ),
+                              BoxShadow(
+                                color: const Color(0xFFDA6666).withOpacity(0.1),
+                                blurRadius: 60,
+                                offset: const Offset(0, 25),
+                              ),
                             ],
                           ),
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(30),
-                            bottomRight: Radius.circular(30),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFDA6666).withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
+                          child: Column(
+                            children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -240,32 +278,40 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               ],
                             ),
                             const SizedBox(height: 30),
-                            // Profile Photo
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
+                            // Profile Photo with animation
+                            ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: Container(
+                                width: 110,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.9),
+                                    width: 4,
                                   ),
-                                ],
-                              ),
-                              child: ClipOval(
-                                child: _profile?.photoUrl != null
-                                    ? Image.network(
-                                        _profile!.photoUrl!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                                      )
-                                    : _buildDefaultAvatar(),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 25,
+                                      offset: const Offset(0, 12),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.white.withOpacity(0.8),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, -2),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: _profile?.photoUrl != null
+                                      ? Image.network(
+                                          _profile!.photoUrl!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                        )
+                                      : _buildDefaultAvatar(),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -290,6 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ],
                         ),
                       ),
+                    ),
                       
                       // Profile Info Cards
                       Padding(
@@ -308,6 +355,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               subtitle: _profile?.age != null
                                   ? '${_profile!.age} years old'
                                   : null,
+                              isEditable: true,
+                              onEdit: () => _editBirthday(),
                             ),
                             const SizedBox(height: 12),
                             _buildInfoCard(
@@ -315,6 +364,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               title: 'Bio',
                               value: _profile?.bio ?? 'No bio added',
                               isExpandable: true,
+                              isEditable: true,
+                              onEdit: () => _editBio(),
                             ),
                             
                             const SizedBox(height: 32),
@@ -364,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             _buildSettingsTile(
                               icon: Icons.info_outline,
                               title: 'About',
-                              subtitle: 'Version 1.0.0',
+                              subtitle: 'Version 1.0.2',
                               onTap: () => _showAbout(),
                             ),
                           ],
@@ -416,6 +467,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     required String value,
     String? subtitle,
     bool isExpandable = false,
+    bool isEditable = false,
+    VoidCallback? onEdit,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -479,6 +532,22 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               ],
             ),
           ),
+          if (isEditable && onEdit != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                onEdit();
+              },
+              icon: const Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: Color(0xFFDA6666),
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
         ],
       ),
     );
@@ -640,6 +709,109 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     Navigator.pushNamed(context, '/auth');
   }
   
+  void _editBirthday() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _profile?.dateOfBirth ?? DateTime.now().subtract(const Duration(days: 365 * 20)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFDA6666),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF2C2C2C),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null && picked != _profile?.dateOfBirth) {
+      setState(() {
+        _profile = _profile?.copyWith(dateOfBirth: picked);
+      });
+      
+      // Save to Firebase
+      if (_profile != null) {
+        await _userService.saveUserProfile(_profile!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Birthday updated successfully'),
+            backgroundColor: Color(0xFFDA6666),
+          ),
+        );
+      }
+    }
+  }
+  
+  void _editBio() {
+    final TextEditingController bioController = TextEditingController(text: _profile?.bio);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text('Edit Bio'),
+        content: TextField(
+          controller: bioController,
+          maxLines: 4,
+          maxLength: 200,
+          decoration: const InputDecoration(
+            hintText: 'Tell us about yourself...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: Color(0xFFDA6666)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              if (bioController.text != _profile?.bio) {
+                setState(() {
+                  _profile = _profile?.copyWith(bio: bioController.text);
+                });
+                
+                // Save to Firebase
+                if (_profile != null) {
+                  await _userService.saveUserProfile(_profile!);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Bio updated successfully'),
+                      backgroundColor: Color(0xFFDA6666),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Color(0xFFDA6666)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
   void _showNotificationSettings() {
     showModalBottomSheet(
       context: context,
@@ -657,6 +829,30 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3CD),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFE69C)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Color(0xFF856404), size: 20),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Beta Feature: These settings are currently in development and may not work as expected.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF856404),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -701,6 +897,30 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               ),
             ),
             const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3CD),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFE69C)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Color(0xFF856404), size: 20),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Beta Feature: These settings are currently in development and may not work as expected.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF856404),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             SwitchListTile(
               title: const Text('Private Profile'),
               subtitle: const Text('Only approved users can see your content'),
@@ -741,21 +961,33 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               ),
             ),
             const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.book_outlined),
-              title: const Text('User Guide'),
-              onTap: () {},
+            const Text(
+              'Support',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.question_answer_outlined),
-              title: const Text('FAQs'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.email_outlined),
-              title: const Text('Contact Support'),
-              subtitle: const Text('support@better.app'),
-              onTap: () {},
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () async {
+                final Uri emailUri = Uri(
+                  scheme: 'mailto',
+                  path: 'better@onkaryaglewad.in',
+                  query: 'subject=Better App Support',
+                );
+                if (await canLaunchUrl(emailUri)) {
+                  await launchUrl(emailUri);
+                }
+              },
+              child: const Text(
+                'better@onkaryaglewad.in',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF4A90E2),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
           ],
@@ -796,7 +1028,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
             const SizedBox(height: 8),
             const Text(
-              'Version 1.0.0',
+              'Version 1.0.2',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
@@ -810,7 +1042,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
             const SizedBox(height: 20),
             const Text(
-              '© 2024 Better App',
+              '© 2025 Better App',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey,
