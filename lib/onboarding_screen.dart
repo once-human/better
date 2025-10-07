@@ -316,7 +316,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           bottom: 0,
           left: 0,
           right: 0,
-          height: 350, // Increased from 250 to fill the gap
+          height: 274, 
           child: Container(
             decoration: const BoxDecoration(
               color: Color(0xFFFBF1F0),

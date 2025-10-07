@@ -96,6 +96,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       _scaleController.forward();
     });
     
+    // Keep status bar visible but make it dark
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
+    
     // Pre-fill if editing
     if (widget.isEditing && widget.existingProfile != null) {
       _nameController.text = widget.existingProfile!.fullName;

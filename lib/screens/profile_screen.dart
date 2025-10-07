@@ -74,6 +74,14 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     _fadeController.forward();
     _slideController.forward();
     _scaleController.forward();
+    
+    // Keep status bar visible but make it dark
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
   }
   
   @override

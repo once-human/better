@@ -139,6 +139,14 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         }
       });
     });
+    
+    // Keep status bar visible but make it dark
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
   }
   
   @override
