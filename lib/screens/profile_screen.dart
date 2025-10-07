@@ -123,15 +123,14 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close dialog first
               try {
                 await FirebaseAuth.instance.signOut();
                 await _userService.clearUserData();
-                Navigator.pushNamed(context, '/auth');
                 
+                // Clear navigation stack and go to auth screen
                 if (mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
+                  Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => const AuthScreen()),
                     (route) => false,
                   );
