@@ -215,96 +215,143 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Profile Header Card
+                      // Profile Header Card - Full Width, Better Design
                       Container(
-                        margin: const EdgeInsets.all(20),
-                        padding: const EdgeInsets.all(24),
+                        margin: const EdgeInsets.symmetric(horizontal: 0),
+                        padding: const EdgeInsets.all(0),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFDA6666),
+                              Color(0xFFE57373),
+                              Color(0xFFF5C6C6),
+                            ],
+                            stops: [0.0, 0.5, 1.0],
+                          ),
+                          borderRadius: BorderRadius.circular(0),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
+                              color: const Color(0xFFDA6666).withOpacity(0.15),
+                              blurRadius: 25,
+                              offset: const Offset(0, 10),
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            // Profile Photo
-                            ScaleTransition(
-                              scale: _scaleAnimation,
-                              child: Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color(0xFFDA6666).withOpacity(0.2),
-                                    width: 4,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFDA6666).withOpacity(0.1),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
+                        child: SafeArea(
+                          bottom: false,
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+                            child: Column(
+                              children: [
+                                // Profile Photo - Larger and more prominent
+                                ScaleTransition(
+                                  scale: _scaleAnimation,
+                                  child: Container(
+                                    width: 140,
+                                    height: 140,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.95),
+                                        width: 5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 30,
+                                          offset: const Offset(0, 15),
+                                        ),
+                                        BoxShadow(
+                                          color: Colors.white.withOpacity(0.8),
+                                          blurRadius: 15,
+                                          offset: const Offset(0, -5),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                    child: ClipOval(
+                                      child: _profile?.photoUrl != null
+                                          ? (_profile!.photoUrl!.startsWith('http')
+                                              ? Image.network(
+                                                  _profile!.photoUrl!,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                                )
+                                              : Image.file(
+                                                  File(_profile!.photoUrl!),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                                ))
+                                          : _buildDefaultAvatar(),
+                                    ),
+                                  ),
                                 ),
-                                child: ClipOval(
-                                  child: _profile?.photoUrl != null
-                                      ? (_profile!.photoUrl!.startsWith('http')
-                                          ? Image.network(
-                                              _profile!.photoUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                                            )
-                                          : Image.file(
-                                              File(_profile!.photoUrl!),
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                                            ))
-                                      : _buildDefaultAvatar(),
+                                const SizedBox(height: 24),
+                                // Name with better typography
+                                Text(
+                                  _profile?.fullName ?? 'Guest User',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black26,
+                                        blurRadius: 10,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            // Name
-                            Text(
-                              _profile?.fullName ?? 'Guest User',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2C2C2C),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            // Email
-                            Text(
-                              _profile?.email ?? '',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (_profile?.bio != null && _profile!.bio!.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                _profile!.bio!,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
-                                  height: 1.4,
+                                const SizedBox(height: 8),
+                                // Email with better styling
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    _profile?.email ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ],
+                                if (_profile?.bio != null && _profile!.bio!.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _profile!.bio!,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        color: Colors.white,
+                                        height: 1.5,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 4,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                       ),
 

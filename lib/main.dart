@@ -216,14 +216,14 @@ class _MyHomePageState extends State<MyHomePage> {
         return Container(
           color: Colors.white,
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 16, // Increased from 12
-            left: 28, // Increased from 24
-            right: 28, // Increased from 24
-            bottom: 16, // Increased from 12
+            top: MediaQuery.of(context).padding.top + 14, // Reduced from +16
+            left: 24, // Reduced from 28
+            right: 24, // Reduced from 28
+            bottom: 14, // Reduced from 16
           ),
           child: Row(
             children: [
-              // Hamburger menu - made 1.5x bigger
+              // Hamburger menu - reduced from 36 to 31
               GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
@@ -232,18 +232,18 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Icon(
                   Icons.menu_rounded,
                   color: Color(0xFF2C2C2C),
-                  size: 36, // Increased from 24 (1.5x)
+                  size: 31, // Reduced from 36
                 ),
               ),
-              const SizedBox(width: 24), // Increased from 16
-              // Logo with text - made 1.5x bigger
+              const SizedBox(width: 20), // Reduced from 24
+              // Logo with text - reduced from 45 to 38 height
               Image.asset(
                 'lib/assets/better_navlogo.png',
-                height: 45, // Increased from 30 (1.5x)
+                height: 38, // Reduced from 45
                 fit: BoxFit.contain,
               ),
               const Spacer(),
-              // Right: Profile button - made 1.5x bigger
+              // Right: Profile button - reduced from 48 to 41
               GestureDetector(
                 onTap: () async {
                   HapticFeedback.selectionClick();
@@ -259,13 +259,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 },
                 child: Container(
-                  width: 48, // Increased from 32 (1.5x)
-                  height: 48, // Increased from 32 (1.5x)
+                  width: 41, // Reduced from 48
+                  height: 41, // Reduced from 48
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: const Color(0xFFE0E0E0),
-                      width: 2.25, // Increased from 1.5 (1.5x)
+                      width: 1.9, // Reduced from 2.25 (0.85x)
                     ),
                   ),
                   child: hasProfileImage
@@ -277,7 +277,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   errorBuilder: (_, __, ___) => const Icon(
                                     Icons.person_outline_rounded,
                                     color: Color(0xFF2C2C2C),
-                                    size: 27, // Increased from 18 (1.5x)
+                                    size: 23, // Reduced from 27 (0.85x)
                                   ),
                                 )
                               : Image.file(
@@ -286,14 +286,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                   errorBuilder: (_, __, ___) => const Icon(
                                     Icons.person_outline_rounded,
                                     color: Color(0xFF2C2C2C),
-                                    size: 27, // Increased from 18 (1.5x)
+                                    size: 23, // Reduced from 27 (0.85x)
                                   ),
                                 ),
                         )
                       : const Icon(
                           Icons.person_outline_rounded,
                           color: Color(0xFF2C2C2C),
-                          size: 27, // Increased from 18 (1.5x)
+                          size: 23, // Reduced from 27 (0.85x)
                         ),
                 ),
               ),

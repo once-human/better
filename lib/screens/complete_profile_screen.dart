@@ -103,18 +103,33 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
       _selectedDate = widget.existingProfile!.dateOfBirth;
       _dobController.text = DateFormat('dd MMMM yyyy').format(_selectedDate!);
       _currentPhotoUrl = widget.existingProfile!.photoUrl;
+    } else {
+      // For new profiles, try to get the best available profile picture
+      _loadBestProfilePicture();
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
     _bioController.dispose();
     _dobController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     _scaleController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadBestProfilePicture() async {
+    try {
+      String? bestPhotoUrl = await _userService.getBestProfilePicture();
+      if (mounted) {
+        setState(() {
+          _currentPhotoUrl = bestPhotoUrl;
+        });
+      }
+    } on Exception catch (e) {
+      print('Error loading best profile picture: $e');
+    }
   }
 
   Future<void> _selectDate() async {
@@ -469,12 +484,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen>
                                           fit: BoxFit.cover,
                                         )
                                       : _currentPhotoUrl != null
-                                          ? Image.network(
-                                              _currentPhotoUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  _buildDefaultAvatar(),
-                                            )
+                                          ? (_currentPhotoUrl!.startsWith('http')
+                                              ? Image.network(
+                                                  _currentPhotoUrl!,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildDefaultAvatar(),
+                                                )
+                                              : Image.file(
+                                                  File(_currentPhotoUrl!),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildDefaultAvatar(),
+                                                ))
                                           : _buildDefaultAvatar(),
                                 ),
                               ),
