@@ -217,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     children: [
                       // Profile Header Card - Full Width White Design
                       Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 20),
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -716,6 +716,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     }
     
     return const Color(0xFF6A1B9A); // Dark purple
+  }
+  
+  Widget _buildDefaultAvatar() {
+    return Container(
+      color: const Color(0xFFF5F5F5),
+      child: Icon(
+        Icons.person,
+        size: 50,
+        color: Colors.grey[400],
+      ),
+    );
   }
   
   Widget _buildUpgradeSection() {
