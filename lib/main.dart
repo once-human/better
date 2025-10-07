@@ -216,14 +216,14 @@ class _MyHomePageState extends State<MyHomePage> {
         return Container(
           color: Colors.white,
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 12,
-            left: 24,
-            right: 24,
-            bottom: 12,
+            top: MediaQuery.of(context).padding.top + 16, // Increased from 12
+            left: 28, // Increased from 24
+            right: 28, // Increased from 24
+            bottom: 16, // Increased from 12
           ),
           child: Row(
             children: [
-              // Hamburger menu
+              // Hamburger menu - made 1.5x bigger
               GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
@@ -232,18 +232,18 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Icon(
                   Icons.menu_rounded,
                   color: Color(0xFF2C2C2C),
-                  size: 24,
+                  size: 36, // Increased from 24 (1.5x)
                 ),
               ),
-              const SizedBox(width: 16),
-              // Logo with text - no background
+              const SizedBox(width: 24), // Increased from 16
+              // Logo with text - made 1.5x bigger
               Image.asset(
                 'lib/assets/better_navlogo.png',
-                height: 30,
+                height: 45, // Increased from 30 (1.5x)
                 fit: BoxFit.contain,
               ),
               const Spacer(),
-              // Right: Profile button
+              // Right: Profile button - made 1.5x bigger
               GestureDetector(
                 onTap: () async {
                   HapticFeedback.selectionClick();
@@ -259,13 +259,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 },
                 child: Container(
-                  width: 32,
-                  height: 32,
+                  width: 48, // Increased from 32 (1.5x)
+                  height: 48, // Increased from 32 (1.5x)
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: const Color(0xFFE0E0E0),
-                      width: 1.5,
+                      width: 2.25, // Increased from 1.5 (1.5x)
                     ),
                   ),
                   child: hasProfileImage
@@ -277,7 +277,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   errorBuilder: (_, __, ___) => const Icon(
                                     Icons.person_outline_rounded,
                                     color: Color(0xFF2C2C2C),
-                                    size: 18,
+                                    size: 27, // Increased from 18 (1.5x)
                                   ),
                                 )
                               : Image.file(
@@ -286,14 +286,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                   errorBuilder: (_, __, ___) => const Icon(
                                     Icons.person_outline_rounded,
                                     color: Color(0xFF2C2C2C),
-                                    size: 18,
+                                    size: 27, // Increased from 18 (1.5x)
                                   ),
                                 ),
                         )
                       : const Icon(
                           Icons.person_outline_rounded,
                           color: Color(0xFF2C2C2C),
-                          size: 18,
+                          size: 27, // Increased from 18 (1.5x)
                         ),
                 ),
               ),

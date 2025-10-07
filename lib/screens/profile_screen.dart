@@ -180,27 +180,25 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2C2C2C)),
-          onPressed: () {
-            // Navigate back to home by updating the index
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
-        ),
         title: const Text(
           'Profile',
           style: TextStyle(
             color: Color(0xFF2C2C2C),
             fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Color(0xFFDA6666)),
+            onPressed: _editProfile,
+          ),
+        ],
       ),
       body: SafeArea(
         child: _isLoading
@@ -215,138 +213,110 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 child: SingleChildScrollView(
                   physics: const ClampingScrollPhysics(),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header with sophisticated gradient
-                      SlideTransition(
-                        position: _slideAnimation,
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                const Color(0xFFDA6666).withOpacity(0.95),
-                                const Color(0xFFF5C6C6),
-                              ],
-                              stops: const [0.3, 1.0],
+                      // Profile Header Card
+                      Container(
+                        margin: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
                             ),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(40),
-                              bottomRight: Radius.circular(40),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFDA6666).withOpacity(0.2),
-                                blurRadius: 30,
-                                offset: const Offset(0, 15),
-                              ),
-                              BoxShadow(
-                                color: const Color(0xFFDA6666).withOpacity(0.1),
-                                blurRadius: 60,
-                                offset: const Offset(0, 25),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Profile',
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    _buildHeaderButton(
-                                      icon: Icons.edit_outlined,
-                                      onTap: _editProfile,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    _buildHeaderButton(
-                                      icon: Icons.logout,
-                                      onTap: _signOut,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 30),
-                            // Profile Photo with animation
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Profile Photo
                             ScaleTransition(
                               scale: _scaleAnimation,
                               child: Container(
-                                width: 110,
-                                height: 110,
+                                width: 120,
+                                height: 120,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: const Color(0xFFDA6666).withOpacity(0.2),
                                     width: 4,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
-                                      blurRadius: 25,
-                                      offset: const Offset(0, 12),
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.white.withOpacity(0.8),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, -2),
+                                      color: const Color(0xFFDA6666).withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
                                     ),
                                   ],
                                 ),
                                 child: ClipOval(
                                   child: _profile?.photoUrl != null
-                                      ? Image.network(
-                                          _profile!.photoUrl!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                                        )
+                                      ? (_profile!.photoUrl!.startsWith('http')
+                                          ? Image.network(
+                                              _profile!.photoUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                            )
+                                          : Image.file(
+                                              File(_profile!.photoUrl!),
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                                            ))
                                       : _buildDefaultAvatar(),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
                             // Name
                             Text(
                               _profile?.fullName ?? 'Guest User',
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Color(0xFF2C2C2C),
                               ),
+                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 4),
                             // Email
                             Text(
                               _profile?.email ?? '',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 16,
+                                color: Colors.grey[600],
                               ),
+                              textAlign: TextAlign.center,
                             ),
+                            if (_profile?.bio != null && _profile!.bio!.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                _profile!.bio!,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                    ),
-                      
+
                       // Profile Info Cards
                       Padding(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildSectionTitle('Personal Information'),
                             const SizedBox(height: 16),
-                            _buildInfoCard(
+                            _buildModernInfoCard(
                               icon: Icons.cake_outlined,
                               title: 'Birthday',
                               value: _profile?.dateOfBirth != null
@@ -359,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                               onEdit: () => _editBirthday(),
                             ),
                             const SizedBox(height: 12),
-                            _buildInfoCard(
+                            _buildModernInfoCard(
                               icon: Icons.info_outline,
                               title: 'Bio',
                               value: _profile?.bio ?? 'No bio added',
@@ -367,60 +337,69 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                               isEditable: true,
                               onEdit: () => _editBio(),
                             ),
-                            
+
                             const SizedBox(height: 32),
                             _buildSectionTitle('Account Information'),
                             const SizedBox(height: 16),
-                            _buildInfoCard(
+                            _buildModernInfoCard(
                               icon: Icons.email_outlined,
                               title: 'Email',
                               value: _profile?.email ?? 'Not available',
                             ),
                             const SizedBox(height: 12),
-                            _buildInfoCard(
+                            _buildModernInfoCard(
                               icon: Icons.access_time,
                               title: 'Member Since',
                               value: _profile?.createdAt != null
                                   ? DateFormat('MMMM yyyy').format(_profile!.createdAt)
                                   : 'Unknown',
                             ),
-                            
+
                             // Show upgrade option for guest users
                             if (_isGuest) ...[
                               const SizedBox(height: 32),
                               _buildUpgradeSection(),
                             ],
-                            
+
                             const SizedBox(height: 32),
                             _buildSectionTitle('Settings'),
                             const SizedBox(height: 16),
-                            _buildSettingsTile(
+                            _buildModernSettingsTile(
                               icon: Icons.notifications_outlined,
                               title: 'Notifications',
                               subtitle: 'Manage notification preferences',
                               onTap: () => _showNotificationSettings(),
                             ),
-                            _buildSettingsTile(
+                            _buildModernSettingsTile(
                               icon: Icons.lock_outline,
                               title: 'Privacy',
                               subtitle: 'Control your privacy settings',
                               onTap: () => _showPrivacySettings(),
                             ),
-                            _buildSettingsTile(
+                            _buildModernSettingsTile(
                               icon: Icons.help_outline,
                               title: 'Help & Support',
                               subtitle: 'Get help or contact support',
                               onTap: () => _showHelpSupport(),
                             ),
-                            _buildSettingsTile(
+                            _buildModernSettingsTile(
                               icon: Icons.info_outline,
                               title: 'About',
                               subtitle: 'Version 1.0.2',
                               onTap: () => _showAbout(),
                             ),
+                            _buildModernSettingsTile(
+                              icon: Icons.logout,
+                              title: 'Sign Out',
+                              subtitle: 'Sign out of your account',
+                              onTap: _signOut,
+                              isDestructive: true,
+                            ),
                           ],
                         ),
                       ),
+
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -461,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
   
-  Widget _buildInfoCard({
+  Widget _buildModernInfoCard({
     required IconData icon,
     required String title,
     required String value,
@@ -471,12 +450,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     VoidCallback? onEdit,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
         border: Border.all(
-          color: Colors.grey[200]!,
+          color: Colors.grey.withOpacity(0.08),
           width: 1,
         ),
       ),
@@ -484,15 +470,15 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFDA6666).withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
               color: const Color(0xFFDA6666),
-              size: 22,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -503,29 +489,32 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
+                    fontSize: 12,
+                    color: Colors.grey[500],
                     fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     color: Color(0xFF2C2C2C),
                     fontWeight: FontWeight.w600,
+                    height: 1.3,
                   ),
-                  maxLines: isExpandable ? null : 1,
+                  maxLines: isExpandable ? null : 2,
                   overflow: isExpandable ? null : TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
@@ -533,7 +522,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
           ),
           if (isEditable && onEdit != null) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             IconButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -553,11 +542,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
   
-  Widget _buildSettingsTile({
+  Widget _buildModernSettingsTile({
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
     return GestureDetector(
       onTap: () {
@@ -565,17 +555,34 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         onTap();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 1),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F8F8),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: const Color(0xFFDA6666),
-              size: 22,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDestructive 
+                    ? Colors.red.withOpacity(0.1)
+                    : const Color(0xFFDA6666).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: isDestructive ? Colors.red[400] : const Color(0xFFDA6666),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -584,12 +591,13 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: Color(0xFF2C2C2C),
+                      color: isDestructive ? Colors.red[400] : const Color(0xFF2C2C2C),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
